@@ -21,7 +21,7 @@ const Conversation = forwardRef(function Conversation(
         onError: (error) => console.error('Error:', error),
     });
 
-    useImperativeHandle(ref, () => ({
+    useImperativeHandle(ref, () => ({ // dk how this works
         end: handleEnd,
     }));
 

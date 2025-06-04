@@ -1,11 +1,12 @@
 export async function GET() {
-
+    
     const requestHeaders: HeadersInit = new Headers();
+    
     requestHeaders.set("xi-api-key", process.env.ELEVENLABS_API_KEY || '');
     const AGENT_ID = process.env.AGENT_ID || '';
 
     const response = await fetch(
-        "https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id={{AGENT_ID}}",
+        `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${AGENT_ID}`,
         {
             method: "GET",
             headers: requestHeaders,
@@ -13,10 +14,8 @@ export async function GET() {
     );
 
     if (!response.ok) {
-        return Response.error();
+        return new Response('Failed to get signed URL', { status: 500 });
     }
     const body = await response.json();
-    const url = body.signed_url;
-
-    return body.signed_url;
+    return Response.json({ signed_url: body.signed_url });
 }
