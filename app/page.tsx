@@ -5,7 +5,8 @@ import { useState, useRef } from 'react';
 
 export default function App() {
   const [isInterviewing, setIsInterviewing] = useState(false);
-  const [startInterview, setStartInterview] = useState(false);
+  const [startInterview, setStartInterview] = useState<'' | 'retell' | 'eleven'>('');
+  const [selectedModel, setSelectedModel] = useState<'retell' | 'eleven'>('retell')
   const [interviewEnded, setInterviewEnded] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
 
@@ -14,7 +15,7 @@ export default function App() {
 
   const handleStart = async () => {
     setIsInterviewing(true);
-    setStartInterview(true);
+    setStartInterview(selectedModel);
     setInterviewEnded(false);
   };
 
@@ -22,7 +23,7 @@ export default function App() {
     conversationRef.current?.end();
     setIsInterviewing(false);
     setInterviewEnded(true);
-    
+
     // Important: stop any tracks when done to avoid memory leaks
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
@@ -50,7 +51,23 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
-      {/* Start Interview button at the top */}
+
+      {/* model selection & start interview */}
+      <div className="flex justify-center items-center gap-3">
+        <label htmlFor="model-select" className="text-black mb-2 ">Select Model:</label>
+        <select
+          id="model-select"
+          value={selectedModel}
+          onChange={(e) => setSelectedModel(e.target.value as 'retell' | 'eleven')}
+          disabled={isInterviewing}
+          className="bg-white text-black rounded-full px-4 py-1.5 mb-2"
+        >
+          <option value="retell">Retell</option>
+          <option value="eleven">ElevenLabs</option>
+        </select>
+      </div>
+
+      {/* start interview button */}
       <div className="flex justify-center mb-6">
         <button
           onClick={handleStart}
@@ -61,7 +78,7 @@ export default function App() {
           {isInterviewing ? (
             <>
               <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
-              Interview in Progress...
+              Interview in Progress... using {selectedModel === 'retell' ? 'Retell' : 'Elevenlabs'}
             </>
           ) : (
             'Start Interview'
@@ -71,6 +88,8 @@ export default function App() {
 
       {isInterviewing && (
         <div className="max-w-2xl flex flex-col items-center justify-center mx-auto bg-white p-9 rounded-lg shadow-md">
+
+
           {!micAllowed ? (
             <>
               <div className="mb-4 text-gray-700">
