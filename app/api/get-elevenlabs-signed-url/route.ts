@@ -19,7 +19,7 @@ export async function GET() {
                 statusText: response.statusText,
                 body: errorText
             });
-            return new Response(`Failed to get signed URL ${response.statusText}, { status: response.status }`);
+            return Response.json(`Failed to get signed URL ${response.statusText}, { status: response.status }`);
         }
         const body = await response.json();
         console.log("Successfully received 11labs signed url")

@@ -3,9 +3,6 @@
 import React, { useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 import { useConversation } from '@elevenlabs/react';
 
-const AGENT_ID = process.env.AGENT_ID || '';
-console.log('Using AGENT_ID:', AGENT_ID);
-
 const ElevenLabsComponent = forwardRef(function Conversation(
     { startInterview, onEnd }: { startInterview: boolean; onEnd: () => void },
     ref) {
@@ -49,7 +46,11 @@ const ElevenLabsComponent = forwardRef(function Conversation(
             await navigator.mediaDevices.getUserMedia({ audio: true }); // request mic access
 
             const response = await fetch('/api/get-elevenlabs-signed-url'); // make req to backend
-            if (!response.ok) throw new Error('Failed to get signed URL');
+            if (!response.ok) {
+                const errorMsg = await response.text();
+                console.error('api error:', response.status, errorMsg);
+                throw new Error(`api error: ${response.status} - ${errorMsg}`);
+            }
             const { signed_url } = await response.json();
 
             console.log('Starting 11labs session with url:', signed_url);
