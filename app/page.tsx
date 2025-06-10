@@ -15,11 +15,13 @@ export default function App() {
 
   const handleStart = async () => {
     setIsInterviewing(true);
-    setStartInterview(selectedModel);
+    setStartInterview(selectedModel === 'eleven' ? 'eleven' : 'retell');
     setInterviewEnded(false);
   };
 
   const handleEnd = () => {
+    // access wtv current ref points to, calls end() if it exists
+    // and the call is routed to whichever actual function exposed by useImperativeHandle in Conversation?
     conversationRef.current?.end();
     setIsInterviewing(false);
     setInterviewEnded(true);
@@ -50,7 +52,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="flex flex-col justify-center items-center min-h-screen bg-gray-100 p-8">
 
       {/* model selection & start interview */}
       <div className="flex justify-center items-center gap-3">
@@ -78,7 +80,7 @@ export default function App() {
           {isInterviewing ? (
             <>
               <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
-              Interview in Progress... using {selectedModel === 'retell' ? 'Retell' : 'Elevenlabs'}
+              Interview in Progress...
             </>
           ) : (
             'Start Interview'
@@ -93,7 +95,7 @@ export default function App() {
           {!micAllowed ? (
             <>
               <div className="mb-4 text-gray-700">
-                This interview requires microphone access. Please allow access to continue.
+                This interview requires microphone access to continue.
               </div>
               <button
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full"
