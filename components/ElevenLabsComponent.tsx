@@ -41,24 +41,36 @@ const ElevenLabsComponent = forwardRef(function Conversation(
     }, [startInterview]);
 
     const handleStart = async () => {
-        // explain allowing access to mic 
+        // get mic access
         try {
-            await navigator.mediaDevices.getUserMedia({ audio: true }); // request mic access
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (micError) {
+            console.error('Microphone access denied:', micError);
+            alert('Microphone access denied. Please allow microphone access and try again.');
+            return;
+        }
 
-            const response = await fetch('/api/get-elevenlabs-signed-url'); // make req to backend
+        // api request
+        try {
+            const response = await fetch('/api/get-elevenlabs-signed-url');
             if (!response.ok) {
                 const errorMsg = await response.text();
                 console.error('api error:', response.status, errorMsg);
                 throw new Error(`api error: ${response.status} - ${errorMsg}`);
             }
-            const { signed_url } = await response.json();
 
-            console.log('Starting 11labs session with url:', signed_url);
-            await startSession({ signedUrl: signed_url }); // ask about this later
+            const data = await response.json();
+            if (!data.signed_url) {
+                console.error('No signed URL in response:', data);
+                throw new Error('Missing signed URL in API response');
+            }
+            console.log('Starting 11labs session with url:', data.signed_url);
+            await startSession({ signedUrl: data.signed_url });
+
         } catch (err) {
             console.error('ElevenLabs error:', err);
             setError(String(err));
-            alert('Failed to start conversation: ' + String(err)); alert('Microphone access denied.');
+            alert('Failed to start conversation: ' + String(err));
         }
     };
 

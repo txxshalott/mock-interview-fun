@@ -3,9 +3,16 @@ export async function GET() {
 
         const requestHeaders: HeadersInit = new Headers();
         requestHeaders.set("xi-api-key", process.env.ELEVEN_API_KEY || '');
+        const agentId = process.env.ELEVEN_AGENT_ID;
+        console.log('agent id used: ', agentId);
+
+        if (!agentId) {
+            console.error('Missing 11labs agent id');
+            return Response.json({ error: 'Missing agent ID configuration' }, { status: 500 });
+        }
 
         const response = await fetch(
-            `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${process.env.ELEVEN_AGENT_ID || ''}`,
+            `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${agentId}`,
             {
                 method: "GET",
                 headers: requestHeaders,
@@ -19,7 +26,7 @@ export async function GET() {
                 statusText: response.statusText,
                 body: errorText
             });
-            return Response.json(`Failed to get signed URL ${response.statusText}, { status: response.status }`);
+            return Response.json({ error: `Failed to get signed URL: ${response.statusText}` }, { status: response.status });
         }
         const body = await response.json();
         console.log("Successfully received 11labs signed url")
