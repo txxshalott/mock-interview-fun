@@ -4,11 +4,12 @@ import React, { useEffect, useState, useImperativeHandle, forwardRef } from 'rea
 import { useConversation } from '@elevenlabs/react';
 
 const ElevenLabsComponent = forwardRef(function Conversation(
-    { startInterview, onEnd }: { startInterview: boolean; onEnd: () => void },
-    ref) {
+    { startInterview, onEnd, llmChoice }: {
+        startInterview: boolean;
+        onEnd: () => void;
+        llmChoice: string;
+    }, ref) {
 
-    // const [status, setStatus] = useState('idle');
-    // const [isSpeaking, setIsSpeaking] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // const convo = useConversation({
@@ -52,10 +53,12 @@ const ElevenLabsComponent = forwardRef(function Conversation(
 
         // api request
         try {
-            const response = await fetch('/api/get-elevenlabs-signed-url');
+            console.log('sending choice: ', llmChoice);
+            const response = await fetch(`/api/get-elevenlabs-signed-url?llm=${llmChoice}`);
+            // pass llm id? 
             if (!response.ok) {
                 const errorMsg = await response.text();
-                console.error('api error:', response.status, errorMsg);
+                // console.error('api error:', response.status, errorMsg);
                 throw new Error(`api error: ${response.status} - ${errorMsg}`);
             }
 

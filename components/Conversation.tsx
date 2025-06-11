@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useEffect, useState, useImperativeHandle, forwardRef } from 'react';
-import { RetellWebClient } from 'retell-client-js-sdk';
 import ElevenLabsComponent from './ElevenLabsComponent'; // Assuming this is the component for ElevenLabs
 
 const Conversation = forwardRef(function Conversation(
-    { startInterview, onEnd }: { startInterview: string; onEnd: () => void },
+    { startInterview, onEnd, llmChoice }: { startInterview: string; onEnd: () => void; llmChoice: string; },
     ref) {
 
     // track loaded SDKs
     const [retellModule, setRetellModule] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [webClient, setWebClient] = useState<any>(null); // replace any with proper tyep?? 
+    const [error, setError] = useState<string | null>(null);
 
     // load retell sdk if selected 
     useEffect(() => {
@@ -60,22 +60,32 @@ const Conversation = forwardRef(function Conversation(
             // call next js api route
             const response = await fetch('/api/create-retell-call', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            }); // make req to backend
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ llm: llmChoice }),
+            });
+
             if (!response.ok) {
                 throw new Error(`API request failed with status ${response.status}`);
             }
             // get call data
             const data = await response.json();
-            console.log('Call created:', data);
+            console.log('Call created: ', JSON.stringify(data, null, 2));
 
             // init client (without api key)
             const client = new retellModule.RetellWebClient();
             setWebClient(client);
 
-            // start call w token from backend
+            if (!data.access_token) {
+                const errorMsg = `Missing Retell agent ID. ${llmChoice} id not set.`;
+                console.error(errorMsg);
+                setError(errorMsg);
+                setRetellStatus('error');
+                return; // Return early to prevent trying to start the call
+            }
+
             await client.startCall({ accessToken: data.access_token });
             setRetellStatus('active');
+
 
             (client as any).on("call_ended", () => {
                 console.log("call ended");
@@ -125,13 +135,17 @@ const Conversation = forwardRef(function Conversation(
     return (
         <div className="flex flex-col items-center">
             {startInterview == 'retell' && (
-                <div className="text-black mt-2"> Retell Status: {retellStatus} </div>
+                <>
+                    <div className="text-black mt-2"> Retell Status: {retellStatus} </div>
+                    {error && <div className="text-red-500 mt-2">Error: {error}</div>}
+                </>
             )}
             {startInterview == 'eleven' && (
                 <div>
                     <ElevenLabsComponent
                         startInterview={true}
                         onEnd={onEnd}
+                        llmChoice={llmChoice}
                         ref={ref} // what is ref..
                     />
                 </div>

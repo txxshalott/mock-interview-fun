@@ -1,10 +1,26 @@
-export async function GET() {
+import { providerConfigs } from '../../../config/LlmConfig'
+
+export async function GET(request: Request) {
     try {
 
         const requestHeaders: HeadersInit = new Headers();
         requestHeaders.set("xi-api-key", process.env.ELEVEN_API_KEY || '');
-        const agentId = process.env.ELEVEN_AGENT_ID;
-        console.log('agent id used: ', agentId);
+
+        const { searchParams } = new URL(request.url);
+        const llmChoice = searchParams.get('llm') || 'gemini20flash';
+        console.log('selected choice: ', llmChoice);
+        console.log('available choices: ', Object.keys(providerConfigs.eleven.llms))
+
+        // find id
+        const llmConfig = providerConfigs.eleven.llms[llmChoice as keyof typeof providerConfigs.eleven.llms];
+        if (!llmConfig) {
+            console.error('Invalid LLM choice for 11labs:', llmChoice);
+            return Response.json({ error: 'Invalid LLM configuration' }, { status: 400 });
+        }
+
+        // get id from env variables
+        const agentId = process.env[llmConfig.id];
+        console.log('11labs agent id used: ', agentId);
 
         if (!agentId) {
             console.error('Missing 11labs agent id');
@@ -34,6 +50,6 @@ export async function GET() {
 
     } catch (err) {
         console.log('Error in 11labs api route: ', err);
-        return new Response(`Internal server error: ${err instanceof Error ? err.message : 'Unknown error'}`, { status: 500 });
+        return new Response(`\nInternal server error: ${err instanceof Error ? err.message : 'Unknown error'}`, { status: 500 });
     }
 }

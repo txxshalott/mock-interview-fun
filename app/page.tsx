@@ -1,6 +1,8 @@
 'use client';
 import React from 'react';
 import Conversation from '../components/Conversation';
+import Dropdown from '../components/Dropdown';
+
 import { useState, useRef } from 'react';
 
 export default function App() {
@@ -9,6 +11,24 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState<'retell' | 'eleven'>('retell')
   const [interviewEnded, setInterviewEnded] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [selectedLlm, setSelectedLlm] = useState('gemini20flash');
+
+  const modelOptions = [
+    { value: 'retell', label: 'Retell' },
+    { value: 'eleven', label: 'ElevenLabs' },
+  ];
+
+  const llmOptions = [
+    { value: 'gpt41', label: 'GPT 4.1' },
+    { value: 'gpt4ort', label: 'GPT 4o realtime' },
+    { value: 'gpt4ominirt', label: 'GPT 4o mini realtime' },
+    { value: 'gemini20flash', label: 'Gemini 2.0 flash' },
+    { value: 'claude37sonnet', label: 'Claude 3.7 Sonnet' },
+    { value: 'claude35haiku', label: 'Claude 3.5 Haiku' },
+
+    // { value: 'claudesonnet4', label: 'Claude Sonnet 4 (11labs only)' },
+
+  ];
 
   // lets parent control actions inside conversation component
   const conversationRef = useRef<{ end: () => void }>(null);
@@ -52,22 +72,24 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100 p-8">
 
       {/* model selection & start interview */}
-      <div className="flex justify-center items-center gap-3">
-        <label htmlFor="model-select" className="text-black mb-2 ">Select Model:</label>
-        <select
-          id="model-select"
-          value={selectedModel}
-          onChange={(e) => setSelectedModel(e.target.value as 'retell' | 'eleven')}
-          disabled={isInterviewing}
-          className="bg-white text-black rounded-full px-4 py-1.5 mb-2"
-        >
-          <option value="retell">Retell</option>
-          <option value="eleven">ElevenLabs</option>
-        </select>
-      </div>
+      <Dropdown
+        label="Select Model: "
+        id="model-select"
+        value={selectedModel}
+        onChange={(value) => setSelectedModel(value as 'retell' | 'eleven')}
+        options={modelOptions}
+      />
+
+      <Dropdown
+        label="Select LLM: "
+        id="llm-select"
+        value={selectedLlm}
+        onChange={(value) => setSelectedLlm(value)}
+        options={llmOptions}
+      />
 
       {/* start interview button */}
       <div className="flex justify-center mb-6">
@@ -80,7 +102,7 @@ export default function App() {
           {isInterviewing ? (
             <>
               <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
-              Interview in Progress...
+              Interview in Progress... {selectedModel === 'retell' ? '(Retell)' : '(Elevenlabs)'}
             </>
           ) : (
             'Start Interview'
@@ -91,11 +113,10 @@ export default function App() {
       {isInterviewing && (
         <div className="max-w-2xl flex flex-col items-center justify-center mx-auto bg-white p-9 rounded-lg shadow-md">
 
-
           {!micAllowed ? (
             <>
               <div className="mb-4 text-gray-700">
-                This interview requires microphone access to continue.
+                This interview requires microphone access. Please allow access to continue.
               </div>
               <button
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full"
@@ -107,9 +128,11 @@ export default function App() {
           ) : (
             <>
               <Conversation
-                ref={conversationRef}
+                ref={conversationRef} // what is this
                 startInterview={startInterview}
-                onEnd={handleEnd} />
+                llmChoice={selectedLlm}
+                onEnd={handleEnd}
+              />
               {interviewEnded && (
                 <div className="text-center text-gray-500">Session ended</div>
               )}
