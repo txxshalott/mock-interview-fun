@@ -13,6 +13,7 @@ interface CallUIProps {
     isAgentSpeaking: boolean;
     error: string | null;
     isUserSpeaking: boolean;
+    status: string;
 
     toggleMute: () => void;
     toggleVideo: () => void;
@@ -22,7 +23,7 @@ interface CallUIProps {
 
 const CallUI: React.FC<CallUIProps> = ({
     audioOnly, isUserSpeaking, videoRef, videoStream, isMuted, isVideoPaused, timer, error,
-    toggleMute, toggleVideo, startVideo, handleRetellEnd, isAgentSpeaking }) => {
+    toggleMute, status, toggleVideo, startVideo, handleRetellEnd, isAgentSpeaking }) => {
 
     // formatting timer
     const formatTime = (seconds: number) => {
@@ -46,6 +47,10 @@ const CallUI: React.FC<CallUIProps> = ({
                 </div>
             </div>
             {/* Content Container */}
+            <div className="flex flex-col items-center justify-center my-4">
+                <div className="text-black">Retell Status: {status}</div>
+                {error && <div className="text-red-500 mt-2">Error: {error}</div>}
+            </div>
             <div className="flex w-full h-72 p-6 gap-6 box-border">
                 {/* left */}
                 <div className="flex-1 flex items-center justify-center bg-gray-100 rounded-lg">

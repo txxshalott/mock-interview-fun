@@ -20,6 +20,7 @@ const Conversation = forwardRef(function Conversation(
     const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
     const [timer, setTimer] = useState<number>(0);
     const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
+    const [callId, setCallId] = useState<string | null>(null);
     const audioOnly = false; // controlled in setup
 
 
@@ -61,7 +62,8 @@ const Conversation = forwardRef(function Conversation(
         }
     }, [videoStream, isMuted]);
 
-    // load retell sdk if selected 
+    // load retell sdk 
+    // this shd only happen once not every time the inter actually nvm
     useEffect(() => {
         if (isInterviewing) {
             setIsLoading(true);
@@ -78,7 +80,8 @@ const Conversation = forwardRef(function Conversation(
 
     // start the convo
     useEffect(() => {
-        if (!isInterviewing) return;
+        if (!isInterviewing || !retellModule) return;
+
         const interval = setInterval(() => {
             setTimer(prev => prev + 1);
         }, 1000);
@@ -94,7 +97,7 @@ const Conversation = forwardRef(function Conversation(
                 handleRetellEnd();
             }
         }
-    }, [isInterviewing]);
+    }, [isInterviewing, retellModule]); // ensures call only starts when sdk loads
 
     // connection bw stream & element happens once
     useEffect(() => {
@@ -155,7 +158,6 @@ const Conversation = forwardRef(function Conversation(
             await client.startCall({ accessToken: data.access_token });
             setRetellStatus('active');
 
-
             (client as any).on("call_ended", () => {
                 console.log("call ended");
                 setRetellStatus('ended');
@@ -170,14 +172,17 @@ const Conversation = forwardRef(function Conversation(
     };
 
     const handleRetellEnd = async () => {
-        // onEnd();
-        // webClient is false? 
         if (webClient) {
             try {
                 console.log('AAAAA');
                 await webClient.stopCall();
-                onEnd();
+                if (callId) {
+                    const resp = await fetch(`/api/get-call-data?callId=${callId}`);
+                    const callResponse = await resp.json();
+                    console.log('call response: ', callResponse);
+                }
                 setRetellStatus('ended');
+                onEnd();
             } catch (err) {
                 console.error('Error ending call:', err);
             }
@@ -250,13 +255,14 @@ const Conversation = forwardRef(function Conversation(
             isVideoPaused={isVideoPaused}
             isAgentSpeaking={isAgentSpeaking}
             isUserSpeaking={isUserSpeaking}
+            status={retellStatus}
             timer={timer}
             error={error}
             toggleMute={toggleMute}
             toggleVideo={toggleVideo}
             startVideo={startVideo}
             audioOnly={audioOnly}
-            handleRetellEnd={onEnd} // dont know why handleretellend doesnt work 
+            handleRetellEnd={handleRetellEnd} // dont know why handleretellend doesnt work 
         />
     );
 });

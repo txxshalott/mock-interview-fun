@@ -17,7 +17,8 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "retell-client-js-sdk": "^2.0.7",
-    "retell-sdk": "^4.33.0"
+    "retell-sdk": "^4.33.0",
+    "web-streams-polyfill": "^4.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
