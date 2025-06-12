@@ -7,9 +7,7 @@ import { useState, useRef } from 'react';
 
 export default function App() {
   const [isInterviewing, setIsInterviewing] = useState(false);
-  const [startInterview, setStartInterview] = useState<'' | 'retell' | 'eleven'>('');
   const [selectedModel, setSelectedModel] = useState<'retell' | 'eleven'>('retell')
-  const [interviewEnded, setInterviewEnded] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [selectedLlm, setSelectedLlm] = useState('gemini20flash');
 
@@ -25,7 +23,6 @@ export default function App() {
     { value: 'gemini20flash', label: 'Gemini 2.0 flash' },
     { value: 'claude37sonnet', label: 'Claude 3.7 Sonnet' },
     { value: 'claude35haiku', label: 'Claude 3.5 Haiku' },
-
     // { value: 'claudesonnet4', label: 'Claude Sonnet 4 (11labs only)' },
 
   ];
@@ -35,16 +32,13 @@ export default function App() {
 
   const handleStart = async () => {
     setIsInterviewing(true);
-    setStartInterview(selectedModel === 'eleven' ? 'eleven' : 'retell');
-    setInterviewEnded(false);
   };
 
   const handleEnd = () => {
     // access wtv current ref points to, calls end() if it exists
     // and the call is routed to whichever actual function exposed by useImperativeHandle in Conversation?
-    conversationRef.current?.end();
+    // conversationRef.current?.end();
     setIsInterviewing(false);
-    setInterviewEnded(true);
 
     // Important: stop any tracks when done to avoid memory leaks
     if (stream) {
@@ -102,7 +96,7 @@ export default function App() {
           {isInterviewing ? (
             <>
               <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
-              Interview in Progress... {selectedModel === 'retell' ? '(Retell)' : '(Elevenlabs)'}
+              Interview in Progress...
             </>
           ) : (
             'Start Interview'
@@ -111,7 +105,7 @@ export default function App() {
       </div>
 
       {isInterviewing && (
-        <div className="max-w-2xl flex flex-col items-center justify-center mx-auto bg-white p-9 rounded-lg shadow-md">
+        <div className="w-full max-w-xl items-center justify-center">
 
           {!micAllowed ? (
             <>
@@ -129,27 +123,21 @@ export default function App() {
             <>
               <Conversation
                 ref={conversationRef} // what is this
-                startInterview={startInterview}
+                isInterviewing={isInterviewing}
                 llmChoice={selectedLlm}
                 onEnd={handleEnd}
               />
-              {interviewEnded && (
+              {!isInterviewing && (
                 <div className="text-center text-gray-500">Session ended</div>
               )}
-              <button
+              {/* <button
                 onClick={handleEnd}
                 className="mt-6 bg-red-400 hover:bg-red-500 text-white px-4 py-2 rounded-full"
               >
                 End interview.
-              </button>
+              </button> */}
             </>
           )}
-        </div>
-      )}
-
-      {interviewEnded && (
-        <div className="flex justify-center mt-8 text-xl text-gray-600 font-semibold">
-          Interview ended.
         </div>
       )}
     </div>

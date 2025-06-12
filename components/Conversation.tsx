@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState, useImperativeHandle, forwardRef } from 'react';
-import ElevenLabsComponent from './ElevenLabsComponent'; // Assuming this is the component for ElevenLabs
+import React, { useRef, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
+import CallUI from './CallUI';
 
 const Conversation = forwardRef(function Conversation(
-    { startInterview, onEnd, llmChoice }: { startInterview: string; onEnd: () => void; llmChoice: string; },
+    { isInterviewing, onEnd, llmChoice }: { isInterviewing: boolean; onEnd: () => void; llmChoice: string; },
     ref) {
 
     // track loaded SDKs
@@ -12,10 +12,58 @@ const Conversation = forwardRef(function Conversation(
     const [isLoading, setIsLoading] = useState(false);
     const [webClient, setWebClient] = useState<any>(null); // replace any with proper tyep?? 
     const [error, setError] = useState<string | null>(null);
+    const [retellStatus, setRetellStatus] = useState<'idle' | 'connecting' | 'active' | 'connected' | 'disconnected' | 'error' | 'ended'>('idle');
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const [isMuted, setIsMuted] = useState(false);
+    const [isVideoPaused, setIsVideoPaused] = useState(false);
+    const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+    const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
+    const [timer, setTimer] = useState<number>(0);
+    const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
+    const audioOnly = false; // controlled in setup
+
+
+    useEffect(() => {
+        if (webClient) {
+            webClient.on('agent_start_talking', () => setIsAgentSpeaking(true));
+            webClient.on('agent_stop_talking', () => setIsAgentSpeaking(false));
+        }
+    }, [webClient]);
+
+    const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+    const audioContext = useRef<AudioContext | null>(null);
+
+    // simple voice detection
+    useEffect(() => {
+        if (videoStream && !audioContext.current) {
+            audioContext.current = new AudioContext();
+            const analyzer = audioContext.current.createAnalyser();
+            analyzer.fftSize = 256;
+
+            // connect stream to analyzer
+            const source = audioContext.current.createMediaStreamSource(videoStream);
+            source.connect(analyzer);
+
+            // data array for analysis
+            const dataArray = new Uint8Array(analyzer.frequencyBinCount);
+
+            // check audio levels at intervals
+            const interval = setInterval(() => {
+                if (isMuted) {
+                    setIsUserSpeaking(false);
+                    return;
+                }
+                analyzer.getByteFrequencyData(dataArray);
+                const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
+                setIsUserSpeaking(average > 15); // threshold for the ring to appear
+            }, 100);
+            return () => clearInterval(interval);
+        }
+    }, [videoStream, isMuted]);
 
     // load retell sdk if selected 
     useEffect(() => {
-        if (startInterview === 'retell' && !retellModule) {
+        if (isInterviewing) {
             setIsLoading(true);
             import("retell-client-js-sdk").then(({ RetellWebClient }) => {
                 setRetellModule({ RetellWebClient });
@@ -25,24 +73,45 @@ const Conversation = forwardRef(function Conversation(
                 setIsLoading(false);
             });
         }
-    }, [startInterview, retellModule]);
+    }, [isInterviewing]);
 
 
     // start the convo
     useEffect(() => {
-        if (!startInterview) return;
-        if (startInterview === 'retell') handleRetellStart();
+        if (!isInterviewing) return;
+        const interval = setInterval(() => {
+            setTimer(prev => prev + 1);
+        }, 1000);
+        setTimerInterval(interval);
+
+        if (isInterviewing) handleRetellStart();
+        startVideo();
 
         // cleanup
         return () => {
             if (webClient) {
                 (webClient as any).removeAllListeners()?.();
-                handleRetellEnd(); // end call if component unmounts
+                handleRetellEnd();
             }
         }
-    }, [startInterview, retellModule]);
+    }, [isInterviewing]);
 
-    const [retellStatus, setRetellStatus] = useState<'idle' | 'connecting' | 'active' | 'connected' | 'disconnected' | 'error' | 'ended'>('idle');
+    // connection bw stream & element happens once
+    useEffect(() => {
+        if (videoRef.current && videoStream) {
+            videoRef.current.srcObject = videoStream;
+        }
+    }, [videoStream]);
+
+    const startVideo = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            setVideoStream(stream);
+            setIsVideoPaused(false);
+        } catch (err) {
+            console.error('error accessing camera', err);
+        }
+    }
 
     const handleRetellStart = async () => {
         if (!retellModule) return;
@@ -101,56 +170,94 @@ const Conversation = forwardRef(function Conversation(
     };
 
     const handleRetellEnd = async () => {
+        // onEnd();
+        // webClient is false? 
         if (webClient) {
             try {
+                console.log('AAAAA');
                 await webClient.stopCall();
-                setRetellStatus('ended');
                 onEnd();
+                setRetellStatus('ended');
             } catch (err) {
                 console.error('Error ending call:', err);
             }
         }
+
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            setVideoStream(null);
+        }
     };
 
-    // useImperativeHandle is
-    /**
-     * "when parent passes ref, give them access to the 'end' method"
-     * the method changes based on which interview is active
-     */
-    useImperativeHandle(ref, () => {
-        return {
-            // end: startInterview === 'retell' ? handleRetellEnd : undefined
-            end: async () => {
-                if (startInterview === 'retell') {
-                    return handleRetellEnd();
-                } else if (startInterview === 'eleven') {
-                    console.log('Trying to end 11labs session');
-                    // call 11labs end on component 
-                }
-            }
-        };
-    });
+    // Format timer as MM:SS
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
 
+    const toggleMute = () => {
+        // initial: false, but tracks are enabled
+        // is there a way to set it based on whether tracks are enabled.
+
+        console.log('CLICKEDtoggled audio');
+        if (videoStream) {
+            videoStream.getAudioTracks().forEach(track => {
+                track.enabled = !track.enabled;
+            });
+        }
+
+        if (webClient) {
+            if (isMuted) {
+                webClient.unmute();
+            } else {
+                webClient.mute();
+            }
+        }
+
+        setIsMuted(!isMuted);
+        console.log('toggled audio to', isMuted);
+    };
+
+    const toggleVideo = () => {
+        console.log('CLICKEDtoggled video');
+        if (videoStream) {
+            videoStream.getVideoTracks().forEach((track) => {
+                track.enabled = !track.enabled; // should use the opposite of current state
+            });
+        } else {
+            startVideo();
+        }
+        setIsVideoPaused(!isVideoPaused);
+        console.log('toggled video to', isVideoPaused);
+    };
+
+    useImperativeHandle(ref, () => ({
+        end: async () => {
+            handleRetellEnd();
+        }
+    }));
 
     return (
-        <div className="flex flex-col items-center">
-            {startInterview == 'retell' && (
-                <>
-                    <div className="text-black mt-2"> Retell Status: {retellStatus} </div>
-                    {error && <div className="text-red-500 mt-2">Error: {error}</div>}
-                </>
-            )}
-            {startInterview == 'eleven' && (
-                <div>
-                    <ElevenLabsComponent
-                        startInterview={true}
-                        onEnd={onEnd}
-                        llmChoice={llmChoice}
-                        ref={ref} // what is ref..
-                    />
-                </div>
-            )}
-        </div>
+        <CallUI
+            videoRef={videoRef}
+            videoStream={videoStream}
+            isMuted={isMuted}
+            isVideoPaused={isVideoPaused}
+            isAgentSpeaking={isAgentSpeaking}
+            isUserSpeaking={isUserSpeaking}
+            timer={timer}
+            error={error}
+            toggleMute={toggleMute}
+            toggleVideo={toggleVideo}
+            startVideo={startVideo}
+            audioOnly={audioOnly}
+            handleRetellEnd={onEnd} // dont know why handleretellend doesnt work 
+        />
     );
 });
 
