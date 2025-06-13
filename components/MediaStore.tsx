@@ -264,7 +264,7 @@ export const MediaProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const startRecording = () => {
+    const startRecording = () => { 
         if (mediaStream) {
             recordingRef.current = [];
             setIsRecording(true);
@@ -342,6 +342,7 @@ export const MediaProvider = ({ children }: { children: ReactNode }) => {
         ) {
             mediaRecordRef.current.stop();
             setIsRecording(false);
+            console.log('recording stopped')
             await waitForData();
             if (faceDetectionIntervalRef.current) {
                 clearInterval(faceDetectionIntervalRef.current);
@@ -385,7 +386,7 @@ export const MediaProvider = ({ children }: { children: ReactNode }) => {
             stopRecording,
             recordingRef,
             faceInFrame,
-            // findFace,
+            findFace: async () => false,
             enableFaceAPI,
             disableFaceAPI,
       }

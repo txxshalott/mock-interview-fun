@@ -20,7 +20,7 @@ export async function GET(request: Request) {
                         'Content-Type': 'text/plain',
                         'Content-Disposition': `attachment; filename="retell-transcript-${callId}.txt"`,
                     },
-                });
+                }); 1
             }
             if (download === 'recording_url' && data.recording_url) {
                 const recordingResponse = await fetch(data.recording_url);

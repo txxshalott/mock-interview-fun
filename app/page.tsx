@@ -16,7 +16,6 @@ export default function App() {
 
   const [isInterviewing, setIsInterviewing] = useState(false);
   const [selectedModel, setSelectedModel] = useState<'retell' | 'eleven'>('retell')
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const [selectedLlm, setSelectedLlm] = useState('gpt4ominirt');
 
   const modelOptions = [
@@ -25,14 +24,13 @@ export default function App() {
   ];
 
   const llmOptions = [
-    // { value: 'gpt41', label: 'GPT 4.1' },
-    // { value: 'gpt4ort', label: 'GPT 4o realtime' },
+    { value: 'gpt41', label: 'GPT 4.1' },
+    { value: 'gpt4ort', label: 'GPT 4o realtime' },
     { value: 'gpt4ominirt', label: 'GPT 4o mini realtime' },
-    // { value: 'gemini20flash', label: 'Gemini 2.0 flash' },
-    // { value: 'claude37sonnet', label: 'Claude 3.7 Sonnet' },
-    // { value: 'claude35haiku', label: 'Claude 3.5 Haiku' },
-    // { value: 'claudesonnet4', label: 'Claude Sonnet 4 (11labs only)' },
-
+    { value: 'gemini20flash', label: 'Gemini 2.0 flash' },
+    { value: 'claude37sonnet', label: 'Claude 3.7 Sonnet' },
+    { value: 'claude35haiku', label: 'Claude 3.5 Haiku' },
+    { value: 'claudesonnet4', label: 'Claude Sonnet 4 (11labs only)' },
   ];
 
   // lets page control actions inside conversation

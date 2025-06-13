@@ -236,11 +236,9 @@ const Conversation = forwardRef(function Conversation(
         }
     };
 
-
     const saveRecording = () => {
         // blob constructor with recording ref
         // create download link with url.createobjecturl
-
         if (!recordingRef.current || recordingRef.current.length === 0) {
             console.error('No recording data available');
             return;

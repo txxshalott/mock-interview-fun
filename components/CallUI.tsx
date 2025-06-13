@@ -86,6 +86,7 @@ const CallUI: React.FC<CallUIProps> = ({
                                     ref={videoRef}
                                     autoPlay
                                     playsInline
+                                    muted
                                     className="w-full h-full object-cover rounded-lg transform -scale-x-100"
                                 />
                                 {isVideoPaused && (
