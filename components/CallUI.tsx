@@ -35,7 +35,6 @@ const CallUI: React.FC<CallUIProps> = ({
     isUserSpeaking = isUserSpeaking && !isMuted;
 
     return (
-
         <div className="w-full max-w-xl bg-white rounded-xl shadow-lg overflow-hidden">
             {/* Ribbon Header */}
             <div className="p-4 border-b border-gray-100">
@@ -53,27 +52,41 @@ const CallUI: React.FC<CallUIProps> = ({
             </div>
             <div className="flex w-full h-72 p-6 gap-6 box-border">
                 {/* left */}
-                <div className="flex-1 flex items-center justify-center bg-gray-100 rounded-lg">
-                    <div className="bg-gray-300 w-full h-full rounded-lg flex items-center justify-center">
-                        <div className="font-bold text-indigo-600 text-lg flex items-center gap-2">
+                <div className="flex-1 flex items-center justify-center rounded-lg">
+                    <div className={
+                        `${audioOnly ? "bg-white w-50 h-50 rounded-full" : "bg-gray-300 w-full h-full rounded-lg "}
+                        ring-2 ring-gray-200 flex items-center justify-center relative`}>
+                        <div className="relative flex text-indigo-500 items-center justify-center w-full h-full">
                             product logo
+                            {isAgentSpeaking && (
+                                <span className={`absolute inset-0 pointer-events-none z-10 block w-full h-full ${audioOnly ? "rounded-full" : "rounded-lg"} ring-4 ring-indigo-500 animate-pulse`}></span>
+                                // <span
+                                //     className={`absolute pointer-events-none z-10 block ${audioOnly ? "rounded-full" : "rounded-lg"} ring-4 ring-indigo-500 animate-pulse`}
+                                //     style={{ width: '50%', height: '50%', top: '25%', left: '25%' }}
+                                // ></span>
+                            )}
                         </div>
                     </div>
-                    {isAgentSpeaking && (
-                        <span className="absolute inset-0 pointer-events-none z-10 block w-full h-full rounded-lg ring-4 ring-indigo-400 animate-pulse"></span>
-                    )}
                 </div>
                 {/* right */}
-                <div className="flex-1 flex items-center justify-center bg-gray-100 rounded-lg">
-                    <div className="bg-gray-300 w-full h-full rounded-lg flex items-center justify-center relative">
-                        {videoStream ? (
+                <div className="flex-1 flex items-center justify-center rounded-lg">
+                    <div className={
+                        `${audioOnly ? "bg-white w-50 h-50 rounded-full" : "bg-gray-300 w-full h-full rounded-lg "}
+                        ring-2 ring-gray-200 flex items-center justify-center relative`}>
+                        {audioOnly ? (
+                            <div className="relative flex text-indigo-500 items-center justify-center w-full h-full">
+                                user
+                                {isUserSpeaking && (
+                                    <span className={`absolute inset-0 pointer-events-none z-10 block w-full h-full ${audioOnly ? "rounded-full" : "rounded-lg"} ring-4 ring-indigo-500 animate-pulse`}></span>
+                                )}
+                            </div>
+                        ) : (
                             <>
                                 <video
                                     ref={videoRef}
                                     autoPlay
                                     playsInline
-                                    className={`w-full h-full object-cover rounded-lg transform -scale-x-100
-                                    ${isVideoPaused ? 'opacity-50' : ''}`} // blur if paused
+                                    className="w-full h-full object-cover rounded-lg transform -scale-x-100"
                                 />
                                 {isVideoPaused && (
                                     <div className="absolute inset-0 text-white flex items-center justify-center">
@@ -81,12 +94,14 @@ const CallUI: React.FC<CallUIProps> = ({
                                     </div>
                                 )}
                                 {isUserSpeaking && (
-                                    <span className="absolute inset-0 pointer-events-none z-10 block w-full h-full rounded-lg ring-3 ring-indigo-500 animate-pulse"></span>
+                                    <span className="absolute inset-0 pointer-events-none z-10 block w-full h-full rounded-lg ring-4 ring-indigo-500 animate-pulse"></span>
                                 )}
                             </>
-                        ) : (
-                            <div className="text-gray-600"> video unavailable" </div>
-                        )}
+                        )
+                        // : (
+                        //     <div className="text-gray-600">video unavailable</div>
+                        // )
+                        }
                     </div>
                 </div>
             </div>
@@ -106,22 +121,25 @@ const CallUI: React.FC<CallUIProps> = ({
                     </button>
 
                     {/* Video toggle button */}
-                    <button
-                        onClick={() => {
-                            if (!videoStream) {
-                                startVideo();
-                            } else {
-                                toggleVideo();
-                            }
-                        }}
-                        className={`w-10 h-10 flex items-center justify-center rounded-full ${isVideoPaused ? 'bg-red-100 text-red-500' : 'bg-gray-200 text-gray-700'}`}
-                    >
-                        {isVideoPaused ? (
-                            <VideoOff className="h-5 w-5" />
-                        ) : (
-                            <Video className="h-5 w-5" />
-                        )}
-                    </button>
+                    {!audioOnly && (
+                        <button
+                            onClick={() => {
+                                if (!videoStream) {
+                                    // reaching here rn? 
+                                    startVideo();
+                                } else {
+                                    toggleVideo();
+                                }
+                            }}
+                            className={`w-10 h-10 flex items-center justify-center rounded-full ${isVideoPaused ? 'bg-red-100 text-red-500' : 'bg-gray-200 text-gray-700'}`}
+                        >
+                            {isVideoPaused ? (
+                                <VideoOff className="h-5 w-5" />
+                            ) : (
+                                <Video className="h-5 w-5" />
+                            )}
+                        </button>
+                    )}
                 </div>
                 {/* Timer */}
                 <div className="text-red-400 flex items-center">
@@ -137,8 +155,6 @@ const CallUI: React.FC<CallUIProps> = ({
                     End call
                 </button>
             </div>
-            {/* Error message */}
-            {error && <div className="text-red-500 text-center p-2">{error}</div>}
         </div>
     );
 };

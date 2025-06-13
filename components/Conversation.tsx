@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import { useMedia } from './MediaStore';
 import CallUI from './CallUI';
 
 const Conversation = forwardRef(function Conversation(
-    { isInterviewing, onEnd, llmChoice }: { isInterviewing: boolean; onEnd: () => void; llmChoice: string; },
+    { isInterviewing, onEnd, llmChoice, mediaStream }:
+        { isInterviewing: boolean; onEnd: () => void; llmChoice: string; mediaStream: MediaStream | null },
     ref) {
 
     // track loaded SDKs
@@ -21,8 +23,11 @@ const Conversation = forwardRef(function Conversation(
     const [timer, setTimer] = useState<number>(0);
     const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
     const [callId, setCallId] = useState<string | null>(null);
-    const audioOnly = false; // controlled in setup
+    const [audioOnly, setAudioOnly] = useState(false);
+    const endingRef = useRef(false);
 
+    // recording
+    const { isRecording, startRecording, stopRecording, recordingRef } = useMedia();
 
     useEffect(() => {
         if (webClient) {
@@ -88,7 +93,8 @@ const Conversation = forwardRef(function Conversation(
         setTimerInterval(interval);
 
         if (isInterviewing) handleRetellStart();
-        startVideo();
+        startVideo(); // function will handle constraints based on audioOnly
+        if (!audioOnly) startRecording();
 
         // cleanup
         return () => {
@@ -107,12 +113,20 @@ const Conversation = forwardRef(function Conversation(
     }, [videoStream]);
 
     const startVideo = async () => {
+
+        if (mediaStream) {
+            setVideoStream(mediaStream);
+            return;
+        }
+
+        // fallback
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const constraints = audioOnly ? { audio: true } : { video: true, audio: true }
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
             setVideoStream(stream);
-            setIsVideoPaused(false);
+            setIsVideoPaused(audioOnly);
         } catch (err) {
-            console.error('error accessing camera', err);
+            console.error('error accessing mic / camera', err);
         }
     }
 
@@ -121,9 +135,6 @@ const Conversation = forwardRef(function Conversation(
 
         try {
             setRetellStatus('connecting');
-            // get mic access
-            await navigator.mediaDevices.getUserMedia({ audio: true });
-
             // ensure existing client is cleaned up
             if (webClient) {
                 await webClient.stopCall();
@@ -141,7 +152,9 @@ const Conversation = forwardRef(function Conversation(
             }
             // get call data
             const data = await response.json();
-            console.log('Call created: ', JSON.stringify(data, null, 2));
+            setCallId(data.call_id);
+            console.log('Call created');
+            // , JSON.stringify(data, null, 2)
 
             // init client (without api key)
             const client = new retellModule.RetellWebClient();
@@ -172,14 +185,41 @@ const Conversation = forwardRef(function Conversation(
     };
 
     const handleRetellEnd = async () => {
+        if (endingRef.current) return;
+        endingRef.current = true;
+
+        console.log('handleRetellEnd called');
         if (webClient) {
             try {
-                console.log('AAAAA');
+                console.log('webclient');
                 await webClient.stopCall();
+                if (!audioOnly) await stopRecording();
+
                 if (callId) {
-                    const resp = await fetch(`/api/get-call-data?callId=${callId}`);
-                    const callResponse = await resp.json();
-                    console.log('call response: ', callResponse);
+                    window.open(`/api/get-call-data?callId=${callId}&download=transcript`, '_blank');
+                    if (audioOnly) {
+                        window.open(`/api/get-call-data?callId=${callId}&download=recording_url`, '_blank');
+                    }
+
+                    // download transcript & recording
+                    // if (callResponse.transcript) {
+                    //     const blob = new Blob([callResponse.transcript], { type: 'text/plain' });
+                    //     const url = URL.createObjectURL(blob);
+
+                    //     const link = document.createElement('a');
+                    //     link.href = url;
+                    //     link.download = `retell-transcript-${callId}.txt`;
+                    //     link.click();
+                    //     URL.revokeObjectURL(url);
+                    // }
+
+                    // if (callResponse.recording_url) {
+                    //     // create a direct link
+                    //     const link = document.createElement('a');
+                    //     link.href = callResponse.recording_url;
+                    //     link.download = `recording-${callId}.mp3`;
+                    //     link.click();
+                    // }
                 }
                 setRetellStatus('ended');
                 onEnd();
@@ -187,35 +227,46 @@ const Conversation = forwardRef(function Conversation(
                 console.error('Error ending call:', err);
             }
         }
-
         if (timerInterval) {
             clearInterval(timerInterval);
         }
-
         if (videoStream) {
             videoStream.getTracks().forEach(track => track.stop());
             setVideoStream(null);
         }
     };
 
-    // Format timer as MM:SS
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
+
+    const saveRecording = () => {
+        // blob constructor with recording ref
+        // create download link with url.createobjecturl
+
+        if (!recordingRef.current || recordingRef.current.length === 0) {
+            console.error('No recording data available');
+            return;
+        }
+        const blob = new Blob(recordingRef.current, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `interview-recording-${callId}.mp4`;
+        document.body.appendChild(link);
+
+        setTimeout(() => {
+            document.body.removeChild(link)
+            URL.revokeObjectURL(url);
+        }, 100)
+    }
 
     const toggleMute = () => {
         // initial: false, but tracks are enabled
         // is there a way to set it based on whether tracks are enabled.
-
-        console.log('CLICKEDtoggled audio');
         if (videoStream) {
             videoStream.getAudioTracks().forEach(track => {
                 track.enabled = !track.enabled;
             });
         }
-
         if (webClient) {
             if (isMuted) {
                 webClient.unmute();
@@ -223,13 +274,11 @@ const Conversation = forwardRef(function Conversation(
                 webClient.mute();
             }
         }
-
         setIsMuted(!isMuted);
         console.log('toggled audio to', isMuted);
     };
 
     const toggleVideo = () => {
-        console.log('CLICKEDtoggled video');
         if (videoStream) {
             videoStream.getVideoTracks().forEach((track) => {
                 track.enabled = !track.enabled; // should use the opposite of current state

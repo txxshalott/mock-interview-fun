@@ -2,10 +2,18 @@
 import React from 'react';
 import Conversation from '../components/Conversation';
 import Dropdown from '../components/Dropdown';
-
+import { useMedia } from '../components/MediaStore';
 import { useState, useRef } from 'react';
 
 export default function App() {
+  // from mediastore
+  const {
+    enableStreams,
+    disableStreams,
+    mediaStream,
+    isReady
+  } = useMedia();
+
   const [isInterviewing, setIsInterviewing] = useState(false);
   const [selectedModel, setSelectedModel] = useState<'retell' | 'eleven'>('retell')
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -27,43 +35,52 @@ export default function App() {
 
   ];
 
-  // lets parent control actions inside conversation component
+  // lets page control actions inside conversation
   const conversationRef = useRef<{ end: () => void }>(null);
 
   const handleStart = async () => {
-    setIsInterviewing(true);
+    const stream = await requestMicAccess();
+    if (stream) {
+      setIsInterviewing(true);
+    }
   };
 
   const handleEnd = () => {
     // access wtv current ref points to, calls end() if it exists
     // and the call is routed to whichever actual function exposed by useImperativeHandle in Conversation?
-    // conversationRef.current?.end();
+    conversationRef.current?.end();
     setIsInterviewing(false);
-
-    // Important: stop any tracks when done to avoid memory leaks
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
+    disableStreams();
   };
 
   const [micAllowed, setMicAllowed] = useState(false);
   const requestMicAccess = async (): Promise<MediaStream | null> => {
     try {
-      // Check if the API is available
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("MediaDevices API or getUserMedia not supported in this browser.");
+      const stream = await enableStreams();
+      if (stream) {
+        setMicAllowed(true);
+        return stream;
       }
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log("Microphone access granted", stream);
-      setMicAllowed(true);
-      return stream;
+      return null;
     } catch (error) {
-      console.error("Error accessing microphone:", error);
+      console.error("Error accessing media devices:", error);
       return null;
     }
   };
+
+  //   // Check if the API is available
+  //   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  //     throw new Error("MediaDevices API or getUserMedia not supported in this browser.");
+  //   }
+
+  //   const astream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+  //   console.log("Microphone access granted", stream);
+  //   setMicAllowed(true);
+  //   return stream;
+  // } catch (error) {
+  //   console.error("Error accessing microphone:", error);
+  //   return null;
+  // }
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100 p-8">
@@ -105,7 +122,7 @@ export default function App() {
       </div>
 
       {isInterviewing && (
-        <div className="w-full max-w-xl items-center justify-center">
+        <div className="w-full max-w-2xl items-center justify-center">
 
           {!micAllowed ? (
             <>
@@ -114,9 +131,9 @@ export default function App() {
               </div>
               <button
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full"
-                onClick={requestMicAccess}
+                onClick={handleStart}
               >
-                Allow Microphone Access
+                Allow Microphone and Video Access
               </button>
             </>
           ) : (
@@ -126,6 +143,7 @@ export default function App() {
                 isInterviewing={isInterviewing}
                 llmChoice={selectedLlm}
                 onEnd={handleEnd}
+                mediaStream={mediaStream}
               />
               {!isInterviewing && (
                 <div className="text-center text-gray-500">Session ended</div>
