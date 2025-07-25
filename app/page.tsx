@@ -18,7 +18,7 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState<'retell' | 'eleven'>('retell')
   const [selectedLlm, setSelectedLlm] = useState('gpt4ominirt');
 
-  const modelOptions = [
+  const platformOptions = [
     { value: 'retell', label: 'Retell' },
     { value: 'eleven', label: 'ElevenLabs' },
   ];
@@ -82,14 +82,15 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100 p-8">
+      <img src="/avatar.PNG" alt="jokebear" className="w-50 h-50 mb-5" />
 
       {/* model selection & start interview */}
       <Dropdown
-        label="Select Model: "
+        label="Select Platform: "
         id="model-select"
         value={selectedModel}
         onChange={(value) => setSelectedModel(value as 'retell' | 'eleven')}
-        options={modelOptions}
+        options={platformOptions}
       />
 
       <Dropdown

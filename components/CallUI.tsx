@@ -41,13 +41,13 @@ const CallUI: React.FC<CallUIProps> = ({
                 <div className="flex items-center">
                     <div className="font-bold text-indigo-600 text-xl flex items-center gap-2">
                         <span>●</span>
-                        product name
+                        Mock interview
                     </div>
                 </div>
             </div>
             {/* Content Container */}
             <div className="flex flex-col items-center justify-center my-4">
-                <div className="text-black">Retell Status: {status}</div>
+                <div className="text-black">Agent status: {status}</div>
                 {error && <div className="text-red-500 mt-2">Error: {error}</div>}
             </div>
             <div className="flex w-full h-72 p-6 gap-6 box-border">
@@ -57,7 +57,7 @@ const CallUI: React.FC<CallUIProps> = ({
                         `${audioOnly ? "bg-white w-50 h-50 rounded-full" : "bg-gray-300 w-full h-full rounded-lg "}
                         ring-2 ring-gray-200 flex items-center justify-center relative`}>
                         <div className="relative flex text-indigo-500 items-center justify-center w-full h-full">
-                            product logo
+                            <img src="/avatar.PNG" alt="jokebear" className="w-full h-full" />
                             {isAgentSpeaking && (
                                 <span className={`absolute inset-0 pointer-events-none z-10 block w-full h-full ${audioOnly ? "rounded-full" : "rounded-lg"} ring-4 ring-indigo-500 animate-pulse`}></span>
                                 // <span

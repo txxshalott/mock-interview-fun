@@ -161,7 +161,8 @@ const Conversation = forwardRef(function Conversation(
             setWebClient(client);
 
             if (!data.access_token) {
-                const errorMsg = `Missing Retell agent ID. ${llmChoice} id not set.`;
+                // const errorMsg = `Missing Retell agent ID. ${llmChoice} id not set.`;
+                const errorMsg = `ran out of credits LOL plz make a new trial account`;
                 console.error(errorMsg);
                 setError(errorMsg);
                 setRetellStatus('error');
