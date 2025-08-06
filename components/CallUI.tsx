@@ -39,9 +39,9 @@ const CallUI: React.FC<CallUIProps> = ({
             {/* Ribbon Header */}
             <div className="p-4 border-b border-gray-100">
                 <div className="flex items-center">
-                    <div className="font-bold text-indigo-600 text-xl flex items-center gap-2">
-                        <span>●</span>
-                        Mock interview
+                    <div className="font-bold text-green-600 text-xl flex items-center gap-3">
+                        <span className="w-3 h-3 bg-green-600 rounded-full animate-pulse"></span>
+                        Interview in Progress...
                     </div>
                 </div>
             </div>
@@ -57,7 +57,7 @@ const CallUI: React.FC<CallUIProps> = ({
                         `${audioOnly ? "bg-white w-50 h-50 rounded-full" : "bg-gray-300 w-full h-full rounded-lg "}
                         ring-2 ring-gray-200 flex items-center justify-center relative`}>
                         <div className="relative flex text-indigo-500 items-center justify-center w-full h-full">
-                            <img src="/avatar.PNG" alt="jokebear" className="w-full h-full" />
+                            <img src="/avatar.PNG" alt="jokebear" className="w-3/4 h-3/5" />
                             {isAgentSpeaking && (
                                 <span className={`absolute inset-0 pointer-events-none z-10 block w-full h-full ${audioOnly ? "rounded-full" : "rounded-lg"} ring-4 ring-indigo-500 animate-pulse`}></span>
                                 // <span
@@ -99,9 +99,9 @@ const CallUI: React.FC<CallUIProps> = ({
                                 )}
                             </>
                         )
-                        // : (
-                        //     <div className="text-gray-600">video unavailable</div>
-                        // )
+                            // : (
+                            //     <div className="text-gray-600">video unavailable</div>
+                            // )
                         }
                     </div>
                 </div>

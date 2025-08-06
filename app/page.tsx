@@ -4,6 +4,7 @@ import Conversation from '../components/Conversation';
 import Dropdown from '../components/Dropdown';
 import { useMedia } from '../components/MediaStore';
 import { useState, useRef } from 'react';
+type AppStep = 'setup' | 'interviewing' | 'done';
 
 export default function App() {
   // from mediastore
@@ -15,6 +16,7 @@ export default function App() {
   } = useMedia();
 
   const [isInterviewing, setIsInterviewing] = useState(false);
+  const [appStep, setAppStep] = useState<AppStep>('setup');
   const [selectedModel, setSelectedModel] = useState<'retell' | 'eleven'>('retell')
   const [selectedLlm, setSelectedLlm] = useState('gpt4ominirt');
 
@@ -34,13 +36,17 @@ export default function App() {
   ];
 
   // lets page control actions inside conversation
-  const conversationRef = useRef<{ end: () => void }>(null);
+  const conversationRef = useRef<{
+    end: () => void;
+    downloadRecording: () => void;
+  }>(null);
 
   const handleStart = async () => {
     const stream = await requestMicAccess();
     if (stream) {
       setIsInterviewing(true);
     }
+    setAppStep('interviewing');
   };
 
   const handleEnd = () => {
@@ -49,6 +55,7 @@ export default function App() {
     conversationRef.current?.end();
     setIsInterviewing(false);
     disableStreams();
+    setAppStep('done');
   };
 
   const [micAllowed, setMicAllowed] = useState(false);
@@ -81,47 +88,55 @@ export default function App() {
   // }
 
   return (
+
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100 p-8">
-      <img src="/avatar.PNG" alt="jokebear" className="w-50 h-50 mb-5" />
+      {appStep === 'setup' && (
+        <>
+          <div className="relative mb-5 inline-block">
+            <img src="/avatar.PNG" alt="jokebear" className="mb-5" />
 
-      {/* model selection & start interview */}
-      <Dropdown
-        label="Select Platform: "
-        id="model-select"
-        value={selectedModel}
-        onChange={(value) => setSelectedModel(value as 'retell' | 'eleven')}
-        options={platformOptions}
-      />
+            <div className="absolute top-0 left-full w-64">
+              <div className="bg-white rounded-xl shadow-sm p-4 border-relative">
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  Hello, I'm here to help you practice behavioural interviews. Our convo will be recorded and available for you to download afterward. It's only available locally and will not be stored anywhere!
+                </p>
+              </div>
+            </div>
+          </div>
 
-      <Dropdown
-        label="Select LLM: "
-        id="llm-select"
-        value={selectedLlm}
-        onChange={(value) => setSelectedLlm(value)}
-        options={llmOptions}
-      />
+          {/* model selection & start interview */}
+          <Dropdown
+            label="Select Platform: "
+            id="model-select"
+            value={selectedModel}
+            onChange={(value) => setSelectedModel(value as 'retell' | 'eleven')}
+            options={platformOptions}
+          />
 
-      {/* start interview button */}
-      <div className="flex justify-center mb-6">
-        <button
-          onClick={handleStart}
-          disabled={isInterviewing}
-          className={`flex items-center gap-2 px-6 py-3 rounded-full text-white ${isInterviewing ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'
-            }`}
-        >
-          {isInterviewing ? (
-            <>
-              <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
-              Interview in Progress...
-            </>
-          ) : (
-            'Start Interview'
-          )}
-        </button>
-      </div>
+          <Dropdown
+            label="Select LLM: "
+            id="llm-select"
+            value={selectedLlm}
+            onChange={(value) => setSelectedLlm(value)}
+            options={llmOptions}
+          />
 
-      {isInterviewing && (
-        <div className="w-full max-w-2xl items-center justify-center">
+          {/* start interview button */}
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={handleStart}
+              disabled={isInterviewing}
+              className={`flex items-center gap-2 px-6 py-3 rounded-full text-white ${isInterviewing ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'
+                }`}
+            >
+              Start Interview
+            </button>
+          </div>
+        </>
+      )}
+
+      {appStep === "interviewing" && (
+        <div className="w-full max-w-2xl flex flex-col items-center justify-center">
 
           {!micAllowed ? (
             <>
@@ -156,6 +171,21 @@ export default function App() {
             </>
           )}
         </div>
+      )}
+
+      {appStep === 'done' && (
+        // download button
+        <>
+          <img src="/avatar.PNG" alt="jokebear" className="mb-5" />
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={() => conversationRef.current?.downloadRecording()}
+              className="flex items-center gap-2 px-6 py-3 rounded-full text-white bg-blue-500 hover:bg-blue-600"
+            >
+              Download Recording
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

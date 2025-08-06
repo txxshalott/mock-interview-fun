@@ -196,32 +196,6 @@ const Conversation = forwardRef(function Conversation(
                 await webClient.stopCall();
                 if (!audioOnly) await stopRecording();
 
-                if (callId) {
-                    window.open(`/api/get-call-data?callId=${callId}&download=transcript`, '_blank');
-                    if (audioOnly) {
-                        window.open(`/api/get-call-data?callId=${callId}&download=recording_url`, '_blank');
-                    }
-
-                    // download transcript & recording
-                    // if (callResponse.transcript) {
-                    //     const blob = new Blob([callResponse.transcript], { type: 'text/plain' });
-                    //     const url = URL.createObjectURL(blob);
-
-                    //     const link = document.createElement('a');
-                    //     link.href = url;
-                    //     link.download = `retell-transcript-${callId}.txt`;
-                    //     link.click();
-                    //     URL.revokeObjectURL(url);
-                    // }
-
-                    // if (callResponse.recording_url) {
-                    //     // create a direct link
-                    //     const link = document.createElement('a');
-                    //     link.href = callResponse.recording_url;
-                    //     link.download = `recording-${callId}.mp3`;
-                    //     link.click();
-                    // }
-                }
                 setRetellStatus('ended');
                 onEnd();
             } catch (err) {
@@ -282,16 +256,19 @@ const Conversation = forwardRef(function Conversation(
             videoStream.getVideoTracks().forEach((track) => {
                 track.enabled = !track.enabled; // should use the opposite of current state
             });
+            setIsVideoPaused(!isVideoPaused);
+            console.log('toggled video to', !isVideoPaused);
         } else {
-            startVideo();
+            console.warn('No video stream available to toggle');
         }
-        setIsVideoPaused(!isVideoPaused);
-        console.log('toggled video to', isVideoPaused);
     };
 
     useImperativeHandle(ref, () => ({
         end: async () => {
             handleRetellEnd();
+        },
+        downloadRecording: () => {
+            saveRecording();
         }
     }));
 
